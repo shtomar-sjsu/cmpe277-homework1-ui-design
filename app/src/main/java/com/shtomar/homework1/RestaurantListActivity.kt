@@ -26,6 +26,18 @@ class RestaurantListActivity : AppCompatActivity() {
         const val KEY_EDIT_RESTAURANT_INDEX = "edit_restaurant_index"
     }
 
+    private var deletionHandler = fun (position: Int) {
+        val restaurant = restaurantListController.restaurants[position]
+
+        restaurantListController.restaurants.removeAt(position)
+        recyclerView.adapter?.notifyItemRemoved(position)
+
+        Snackbar.make(findViewById(R.id.fab), "Undo", Snackbar.LENGTH_INDEFINITE).setAction(R.string.confirm_button_positive) {
+            restaurantListController.restaurants.add(position, restaurant)
+            recyclerView.adapter?.notifyItemInserted(position)
+        }.show()
+    }
+
     private val restaurantEditHandler = fun(position: Int) {
         val restaurant = restaurantListController.restaurants[position]
         val editRestaurantIntent = Intent(this, EditRestaurantActivity::class.java)
@@ -94,7 +106,10 @@ class RestaurantListActivity : AppCompatActivity() {
             }
         })
 
-        var itemTouchHelper = ItemTouchHelper(SwipeToDeleteCallback())
+        var swipeCallback = SwipeToDeleteCallback()
+        swipeCallback.deletionCallback = deletionHandler
+
+        var itemTouchHelper = ItemTouchHelper(swipeCallback)
         itemTouchHelper.attachToRecyclerView(recyclerView)
 
     }
@@ -134,20 +149,22 @@ class RestaurantListActivity : AppCompatActivity() {
     }
 }
 
-class SwipeToDeleteCallback() : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
+class SwipeToDeleteCallback : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
+
+    lateinit var deletionCallback: (Int) -> Unit
+
     override fun onMove(
         recyclerView: RecyclerView,
         viewHolder: RecyclerView.ViewHolder,
         target: RecyclerView.ViewHolder
     ): Boolean {
-        TODO("Not yet implemented")
+        return true
     }
 
     override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-        TODO("Not yet implemented")
+        val deletedPosition = viewHolder.adapterPosition
+        deletionCallback?.also {
+            it(deletedPosition)
+        }
     }
-
 }
-//    public SwipeToDeleteCallback(MyAdapter adapter) {
-//        super(0,ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT);
-//    }
